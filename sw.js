@@ -1,4 +1,4 @@
-const CACHE = "oref-nerya-v1.3";
+const CACHE = "oref-nerya-v1.4";
 const ASSETS = [
   "./",
   "./index.html",
