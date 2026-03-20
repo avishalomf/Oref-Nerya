@@ -2,8 +2,8 @@ name: Fetch Oref Alerts
 
 on:
   schedule:
-- cron: '* * * * *'   # כל דקה
-  workflow_dispatch:          # הרצה ידנית מה-UI
+    - cron: '* * * * *'
+  workflow_dispatch:
 
 jobs:
   fetch:
