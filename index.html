@@ -29,14 +29,14 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const VERSION     = "1.4";
-    const GITHUB_USER = "avishalomf";
-    const GITHUB_REPO = "Oref-Nerya";
-    const BASE        = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main`;
-    const ALERTS_URL  = `${BASE}/alerts.json`;
-    const HISTORY_URL = `${BASE}/alerts_history.json`;
+    const VERSION     = "1.8";
+    // כתובת ה-Worker של Cloudflare — תמלא אחרי ההגדרה
+    const WORKER_URL  = "https://oref-nerya.avishalomf.workers.dev";
+    const ALERTS_URL  = `${WORKER_URL}/alerts`;
+    const HISTORY_URL = `${WORKER_URL}/history`;
+    const LOG_URL     = null; // לא בשימוש במצב Worker
     const FILTER_AREA = "נריה";
-    const POLL_MS     = 5 * 60 * 1000;
+    const POLL_MS     = 30 * 1000; // דגימה כל 30 שניות
 
     const CATEGORY_LABELS = {
       1: "🚀 ירי רקטות וטילים", 2: "✈️ חדירת כלי טיס עוין",
@@ -108,7 +108,7 @@
       return (
         <div style={{marginBottom:16}}>
           <div style={{fontSize:12, color:"#8b949e", marginBottom:8}}>🎵 צליל התראה:</div>
-          <div style={{display:"flex", gap:8, flexWrap:"wrap"}}>
+          <div style={{display:"flex", gap:8, flexWrap:"wrap", marginBottom:10}}>
             {[["siren","🚨 סירנה"],["beep","📣 צפצוף"],["deep","🔔 עמוק"],["none","🔇 שקט"]].map(([id,label]) => (
               <button key={id}
                 onClick={() => { onChange(id); if (id !== "none") playSound(id); }}
@@ -120,6 +120,12 @@
                 }}>{label}</button>
             ))}
           </div>
+          <div style={{fontSize:12, color:"#8b949e", marginBottom:8}}>✅ צליל חזרה לשגרה:</div>
+          <button onClick={() => playSound("allclear")}
+            style={{padding:"6px 18px", borderRadius:20, fontSize:13, cursor:"pointer",
+              background:"#0f2a1a", border:"1px solid #3fb950", color:"#3fb950"}}>
+            ▶ דו-מי-סול
+          </button>
         </div>
       );
     }
@@ -133,6 +139,7 @@
       const [tab,           setTab]           = React.useState("active");
       const [alertSound,    setAlertSound]    = React.useState("siren");
       const [justCleared,   setJustCleared]   = React.useState(false);
+      const [log,           setLog]           = React.useState([]);
       const [installPrompt, setInstallPrompt] = React.useState(null);
 
       React.useEffect(() => {
@@ -178,6 +185,19 @@
         finally { setLoading(false); }
       }, [alertSound]);
 
+      const fetchLog = React.useCallback(async () => {
+        if (!LOG_URL) return; // לא זמין במצב Worker
+        try {
+          const res = await fetch(LOG_URL + "?t=" + Date.now());
+          if (!res.ok) return;
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            const since = Date.now() - 24 * 60 * 60 * 1000;
+            setLog(data.filter(e => new Date(e.detectedAt).getTime() > since).reverse());
+          }
+        } catch(e) {}
+      }, []);
+
       const fetchHistory = React.useCallback(async () => {
         setLoading(true); setError(null);
         try {
@@ -197,6 +217,7 @@
 
       React.useEffect(() => {
         fetchAlerts(false);
+        fetchLog();
         const iv = setInterval(() => fetchAlerts(true), POLL_MS);
         return () => clearInterval(iv);
       }, [fetchAlerts]);
@@ -246,7 +267,7 @@
             <button style={tab==="active" ? s.tabOn : s.tabOff}
               onClick={() => { setTab("active"); fetchAlerts(false); }}>🔴 התראות פעילות</button>
             <button style={tab==="history" ? s.tabOn : s.tabOff}
-              onClick={() => { setTab("history"); fetchHistory(); }}>📋 היסטוריה</button>
+              onClick={() => { setTab("history"); fetchHistory(); fetchLog(); }}>📋 היסטוריה</button>
           </div>
 
           {error && <div style={s.err}>❌ {error}</div>}
@@ -280,14 +301,40 @@
 
           {tab==="history" && <>
             {loading && history.length===0 && <div style={{textAlign:"center",padding:40,color:"#8b949e"}}>⏳ טוען...</div>}
-            {!loading && history.length===0 && !error && <div style={{textAlign:"center",padding:40,color:"#8b949e"}}>אין היסטוריה עבור {FILTER_AREA}.</div>}
-            {history.slice(0,50).map((item,i) => (
-              <div key={i} style={s.histRow} className="card">
-                <div style={{fontWeight:"bold",fontSize:14}}>{CATEGORY_LABELS[item.category] || `⚠️ קטגוריה ${item.category}`}</div>
-                <div style={{color:"#c9d1d9",marginTop:4,fontSize:14}}>{item.data}</div>
-                <div style={{fontSize:11,color:"#8b949e",marginTop:5}}>{formatTime(item.alertDate)}</div>
+            {!loading && history.length===0 && log.length===0 && !error && <div style={{textAlign:"center",padding:40,color:"#8b949e"}}>אין היסטוריה עבור {FILTER_AREA}.</div>}
+
+            {/* יומן עצמאי — 24 שעות אחרונות */}
+            {log.length > 0 && (
+              <div style={{marginBottom:16}}>
+                <div style={{fontSize:12,color:"#f0883e",marginBottom:8,fontWeight:"bold"}}>📋 יומן התראות (24 שעות אחרונות — עוקב עצמאי)</div>
+                {log.map((item,i) => {
+                  const ago = Math.round((Date.now() - new Date(item.detectedAt).getTime()) / 60000);
+                  return (
+                    <div key={i} style={{...s.histRow, borderColor:"#f0883e33"}} className="card">
+                      <div style={{fontWeight:"bold",fontSize:13,color:"#f0883e"}}>{CATEGORY_LABELS[item.category] || "⚠️ התראה"}</div>
+                      <div style={{color:"#c9d1d9",marginTop:3,fontSize:14}}>{(item.areas||[]).join(", ")}</div>
+                      <div style={{fontSize:11,color:"#8b949e",marginTop:4}}>
+                        {formatTime(item.detectedAt)} • לפני {ago} דק׳
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
+            )}
+
+            {/* היסטוריה מאתר פיקוד העורף */}
+            {history.length > 0 && (
+              <div>
+                <div style={{fontSize:12,color:"#8b949e",marginBottom:8,fontWeight:"bold"}}>📡 היסטוריה מאתר פיקוד העורף</div>
+                {history.slice(0,50).map((item,i) => (
+                  <div key={i} style={s.histRow} className="card">
+                    <div style={{fontWeight:"bold",fontSize:14}}>{CATEGORY_LABELS[item.category] || `⚠️ קטגוריה ${item.category}`}</div>
+                    <div style={{color:"#c9d1d9",marginTop:4,fontSize:14}}>{item.data}</div>
+                    <div style={{fontSize:11,color:"#8b949e",marginTop:5}}>{formatTime(item.alertDate)}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </>}
 
           <div style={s.footer}>v{VERSION} • מתרענן כל 5 דקות • oref.org.il דרך GitHub Actions</div>
