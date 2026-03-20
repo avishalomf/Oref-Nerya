@@ -29,7 +29,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const VERSION     = "2.6";
+    const VERSION     = "2.8";
     // התראות פעילות — מ-GitHub (כל דקה)
     const GITHUB_BASE  = "https://raw.githubusercontent.com/avishalomf/Oref-Nerya/main";
     const ALERTS_URL   = `${GITHUB_BASE}/alerts.json`;
@@ -224,12 +224,24 @@
 
       React.useEffect(() => {
         fetchAlerts(false);
+        fetchHistory();
         fetchLog();
-        const iv = setInterval(() => fetchAlerts(true), POLL_MS);
+        const iv = setInterval(() => { fetchAlerts(true); fetchHistory(); }, POLL_MS);
         return () => clearInterval(iv);
       }, [fetchAlerts]);
 
       const hasActive = Array.isArray(activeAlerts?.data) && activeAlerts.data.length > 0;
+
+      // אם אין התראה פעילה — בדוק אם יש בהיסטוריה משהו מ-4 דקות אחרונות
+      const recentAlert = React.useMemo(() => {
+        if (hasActive) return null;
+        const cutoff = Date.now() - 4 * 60 * 1000;
+        return history.find(h =>
+          h.category !== 13 && // לא "האירוע הסתיים"
+          h.category !== 14 && // לא כוננות
+          new Date(h.alertDate).getTime() > cutoff
+        ) || null;
+      }, [hasActive, history]);
 
       const s = {
         page:    { padding:"16px", maxWidth:600, margin:"0 auto" },
@@ -289,7 +301,17 @@
                 <div style={{color:"#8b949e",fontSize:24,marginTop:4}}>🕐 {clearedAt ? formatTime(clearedAt.toISOString()) : ""}</div>
               </div>
             )}
-            {!hasActive && !clearedAt && activeAlerts !== null && (
+            {recentAlert && (
+              <div style={{...s.alert, background:"#2d1a00", borderColor:"#f0883e"}} className="card">
+                <div style={{color:"#f0883e", fontWeight:"bold", fontSize:28}}>
+                  ⚠️ התראה אחרונה (פחות מ-4 דקות)
+                </div>
+                <div style={{fontSize:34, marginTop:6, fontWeight:"bold"}}>{recentAlert.data}</div>
+                <div style={{fontSize:24, color:"#e3b341", marginTop:4}}>{CATEGORY_LABELS[recentAlert.category] || recentAlert.title}</div>
+                <div style={{fontSize:22, color:"#8b949e", marginTop:4}}>{recentAlert.alertDate}</div>
+              </div>
+            )}
+            {!hasActive && !recentAlert && !clearedAt && activeAlerts !== null && (
               <div style={s.ok} className="card">
                 <div style={{fontSize:88,marginBottom:10}}>✅</div>
                 <div style={{color:"#3fb950",fontSize:34,fontWeight:"bold"}}>אין התראות פעילות כרגע</div>
