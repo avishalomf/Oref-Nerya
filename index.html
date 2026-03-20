@@ -29,7 +29,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const VERSION     = "1.8";
+    const VERSION     = "1.9";
     // כתובת ה-Worker של Cloudflare — תמלא אחרי ההגדרה
     const WORKER_URL  = "https://oref-nerya.avishalomf.workers.dev";
     const ALERTS_URL  = `${WORKER_URL}/alerts`;
@@ -337,7 +337,7 @@
             )}
           </>}
 
-          <div style={s.footer}>v{VERSION} • מתרענן כל 5 דקות • oref.org.il דרך GitHub Actions</div>
+          <div style={s.footer}>v{VERSION} • מתרענן כל 30 שניות • oref.org.il דרך Cloudflare</div>
         </div>
       );
     }
