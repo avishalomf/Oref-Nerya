@@ -29,7 +29,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const VERSION     = "2.0";
+    const VERSION     = "2.1";
     // התראות פעילות — מ-GitHub (כל דקה)
     const GITHUB_BASE  = "https://raw.githubusercontent.com/avishalomf/Oref-Nerya/main";
     const ALERTS_URL   = `${GITHUB_BASE}/alerts.json`;
@@ -140,7 +140,7 @@
       const [lastUpdate,    setLastUpdate]    = React.useState(null);
       const [tab,           setTab]           = React.useState("active");
       const [alertSound,    setAlertSound]    = React.useState("siren");
-      const [justCleared,   setJustCleared]   = React.useState(false);
+      const [clearedAt,     setClearedAt]     = React.useState(null); // זמן חזרה לשגרה
       const [log,           setLog]           = React.useState([]);
       const [installPrompt, setInstallPrompt] = React.useState(null);
 
@@ -171,13 +171,13 @@
                 if (alertSound !== "none") playSound(alertSound);
                 if ("Notification" in window && Notification.permission === "granted")
                   new Notification("⚠️ התראת פיקוד העורף", { body: data.data.join(", ") });
-                setJustCleared(false);
+                setClearedAt(null);
               } else if (!hasNow && hadBefore) {
                 playSound("allclear");
                 if ("Notification" in window && Notification.permission === "granted")
                   new Notification("✅ חזרה לשגרה", { body: `אזור ${FILTER_AREA}` });
-                setJustCleared(true);
-                setTimeout(() => setJustCleared(false), 10000);
+                setClearedAt(new Date());
+                setTimeout(() => setClearedAt(null), 30 * 60 * 1000); // חצי שעה
               }
             }
             return data;
@@ -276,14 +276,15 @@
 
           {tab==="active" && <>
             {loading && !activeAlerts && <div style={{textAlign:"center",padding:40,color:"#8b949e"}}>⏳ טוען...</div>}
-            {justCleared && (
+            {clearedAt && (
               <div style={s.cleared} className="card">
                 <div style={{fontSize:36,marginBottom:8}}>✅</div>
                 <div style={{color:"#58a6ff",fontSize:17,fontWeight:"bold"}}>חזרה לשגרה</div>
                 <div style={{color:"#8b949e",fontSize:12,marginTop:6}}>ההתראה בוטלה באזור {FILTER_AREA}</div>
+                <div style={{color:"#8b949e",fontSize:12,marginTop:4}}>🕐 {clearedAt ? formatTime(clearedAt.toISOString()) : ""}</div>
               </div>
             )}
-            {!hasActive && !justCleared && activeAlerts !== null && (
+            {!hasActive && !clearedAt && activeAlerts !== null && (
               <div style={s.ok} className="card">
                 <div style={{fontSize:44,marginBottom:10}}>✅</div>
                 <div style={{color:"#3fb950",fontSize:17,fontWeight:"bold"}}>אין התראות פעילות כרגע</div>
