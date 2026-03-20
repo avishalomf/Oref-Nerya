@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>פיקוד העורף – נריה</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', Arial, sans-serif; }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(248,81,73,0.4); }
+      50%       { box-shadow: 0 0 0 8px rgba(248,81,73,0); }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const GITHUB_USER = "avishalomf";
+    const GITHUB_REPO = "Oref-Nerya";
+    const BASE         = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main`;
+    const ALERTS_URL   = `${BASE}/alerts.json`;
+    const HISTORY_URL  = `${BASE}/alerts_history.json`;
+    const FILTER_AREA  = "נריה";
+
+    const CATEGORY_LABELS = {
+      1:  "🚀 ירי רקטות וטילים",
+      2:  "✈️ חדירת כלי טיס עוין",
+      3:  "☢️ אירוע חומרים מסוכנים",
+      4:  "🌊 צונאמי",
+      5:  "🏠 חדירת מחבלים",
+      6:  "⚠️ אירוע בלתי מוגדר",
+      7:  "🌋 רעידת אדמה",
+      13: '🛸 חדירת כטב"מ עוין',
+    };
+
+    function formatTime(dateStr) {
+      if (!dateStr) return "";
+      return new Date(dateStr).toLocaleString("he-IL", {
+        day:"2-digit", month:"2-digit", year:"numeric",
+        hour:"2-digit", minute:"2-digit", second:"2-digit",
+      });
+    }
+
+    function App() {
+      const [activeAlerts, setActiveAlerts] = React.useState(null);
+      const [history,      setHistory]      = React.useState([]);
+      const [error,        setError]        = React.useState(null);
+      const [loading,      setLoading]      = React.useState(false);
+      const [lastUpdate,   setLastUpdate]   = React.useState(null);
+      const [tab,          setTab]          = React.useState("active");
+
+      const fetchAlerts = React.useCallback(async () => {
+        setLoading(true); setError(null);
+        try {
+          const res = await fetch(ALERTS_URL + "?t=" + Date.now());
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          setActiveAlerts(data);
+          setLastUpdate(new Date());
+        } catch(e) { setError(e.message); }
+        finally { setLoading(false); }
+      }, []);
+
+      const fetchHistory = React.useCallback(async () => {
+        setLoading(true); setError(null);
+        try {
+          const res = await fetch(HISTORY_URL + "?t=" + Date.now());
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          setHistory(Array.isArray(data) ? data : []);
+          setLastUpdate(new Date());
+        } catch(e) { setError(e.message); }
+        finally { setLoading(false); }
+      }, []);
+
+      React.useEffect(() => {
+        fetchAlerts();
+        const iv = setInterval(fetchAlerts, 5 * 60 * 1000);
+        return () => clearInterval(iv);
+      }, [fetchAlerts]);
+
+      const hasActive = activeAlerts?.data?.length > 0;
+
+      const s = {
+        page:    { padding: 20, maxWidth: 720, margin: "0 auto" },
+        header:  { display:"flex", alignItems:"center", gap:12, marginBottom:24, borderBottom:"2px solid #21262d", paddingBottom:16 },
+        btn:     { padding:"8px 16px", borderRadius:8, background:"#21262d", border:"1px solid #30363d", color:"#58a6ff", cursor:"pointer", fontSize:13 },
+        tabOn:   { padding:"8px 20px", borderRadius:8, cursor:"pointer", fontSize:14, background:"#1f6feb", border:"1px solid #388bfd", color:"#fff", fontWeight:"bold" },
+        tabOff:  { padding:"8px 20px", borderRadius:8, cursor:"pointer", fontSize:14, background:"#21262d", border:"1px solid #30363d", color:"#8b949e" },
+        ok:      { background:"#0f2a1a", border:"1px solid #3fb950", borderRadius:12, padding:24, textAlign:"center" },
+        alert:   { background:"#3d0000", border:"2px solid #f85149", borderRadius:12, padding:16, marginBottom:12, animation:"pulse 1.5s infinite" },
+        histRow: { background:"#161b22", border:"1px solid #30363d", borderRadius:10, padding:14, marginBottom:8, display:"flex", justifyContent:"space-between", alignItems:"center" },
+        err:     { background:"#3d1f1f", border:"1px solid #f85149", borderRadius:10, padding:14, marginBottom:16, color:"#f85149" },
+        footer:  { marginTop:24, fontSize:11, color:"#484f58", textAlign:"center" },
+      };
+
+      return (
+        <div style={s.page}>
+          {/* כותרת */}
+          <div style={s.header}>
+            <span style={{fontSize:36}}>🛡️</span>
+            <div>
+              <h1 style={{fontSize:22, color:"#58a6ff"}}>פיקוד העורף – {FILTER_AREA}</h1>
+              <div style={{fontSize:12, color:"#8b949e", marginTop:4}}>
+                {lastUpdate ? `עודכן: ${formatTime(lastUpdate.toISOString())}` : "ממתין..."}
+              </div>
+            </div>
+            <button style={{...s.btn, marginRight:"auto"}} disabled={loading}
+              onClick={tab==="active" ? fetchAlerts : fetchHistory}>
+              {loading ? "⏳ טוען..." : "🔄 רענן"}
+            </button>
+          </div>
+
+          {/* טאבים */}
+          <div style={{display:"flex", gap:8, marginBottom:20}}>
+            <button style={tab==="active" ? s.tabOn : s.tabOff}
+              onClick={() => { setTab("active"); fetchAlerts(); }}>🔴 התראות פעילות</button>
+            <button style={tab==="history" ? s.tabOn : s.tabOff}
+              onClick={() => { setTab("history"); fetchHistory(); }}>📋 היסטוריה</button>
+          </div>
+
+          {/* שגיאה */}
+          {error && <div style={s.err}>❌ {error}</div>}
+
+          {/* התראות פעילות */}
+          {tab==="active" && <>
+            {loading && !activeAlerts && <div style={{textAlign:"center",padding:40,color:"#8b949e"}}>⏳ טוען...</div>}
+            {!hasActive && activeAlerts !== null && (
+              <div style={s.ok}>
+                <div style={{fontSize:48, marginBottom:12}}>✅</div>
+                <div style={{color:"#3fb950", fontSize:18, fontWeight:"bold"}}>אין התראות פעילות כרגע</div>
+                <div style={{color:"#8b949e", fontSize:13, marginTop:8}}>אזור: {FILTER_AREA}</div>
+              </div>
+            )}
+            {hasActive && activeAlerts.data.map((area, i) => (
+              <div key={i} style={s.alert}>
+                <div style={{color:"#f85149", fontWeight:"bold", fontSize:16}}>
+                  {CATEGORY_LABELS[activeAlerts.cat] || "⚠️ התראה"}
+                </div>
+                <div style={{fontSize:20, marginTop:8}}>{area}</div>
+                <div style={{fontSize:12, color:"#8b949e", marginTop:6}}>{formatTime(activeAlerts.alertDate)}</div>
+              </div>
+            ))}
+          </>}
+
+          {/* היסטוריה */}
+          {tab==="history" && <>
+            {loading && history.length===0 && <div style={{textAlign:"center",padding:40,color:"#8b949e"}}>⏳ טוען...</div>}
+            {!loading && history.length===0 && !error && <div style={{textAlign:"center",padding:40,color:"#8b949e"}}>אין היסטוריה עבור {FILTER_AREA}.</div>}
+            {history.slice(0,50).map((item, i) => (
+              <div key={i} style={s.histRow}>
+                <div>
+                  <div style={{fontWeight:"bold"}}>{CATEGORY_LABELS[item.category] || `⚠️ קטגוריה ${item.category}`}</div>
+                  <div style={{color:"#c9d1d9", marginTop:4}}>{item.data}</div>
+                </div>
+                <div style={{fontSize:12, color:"#8b949e", whiteSpace:"nowrap", marginRight:12}}>
+                  {formatTime(item.alertDate)}
+                </div>
+              </div>
+            ))}
+          </>}
+
+          <div style={s.footer}>מתרענן אוטומטית כל 5 דקות • מקור: oref.org.il דרך GitHub Actions</div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
