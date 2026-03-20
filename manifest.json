@@ -1,0 +1,23 @@
+{
+  "name": "פיקוד העורף – נריה",
+  "short_name": "פיקוד העורף",
+  "description": "התראות פיקוד העורף לאזור נריה",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "dir": "rtl",
+  "lang": "he",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/avishalomf/Oref-Nerya/main/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://raw.githubusercontent.com/avishalomf/Oref-Nerya/main/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
