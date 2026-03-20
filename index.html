@@ -29,7 +29,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const VERSION     = "2.2";
+    const VERSION     = "2.4";
     // התראות פעילות — מ-GitHub (כל דקה)
     const GITHUB_BASE  = "https://raw.githubusercontent.com/avishalomf/Oref-Nerya/main";
     const ALERTS_URL   = `${GITHUB_BASE}/alerts.json`;
@@ -41,10 +41,15 @@
     const POLL_MS     = 30 * 1000; // דגימה כל 30 שניות
 
     const CATEGORY_LABELS = {
-      1: "🚀 ירי רקטות וטילים", 2: "✈️ חדירת כלי טיס עוין",
-      3: "☢️ חומרים מסוכנים",   4: "🌊 צונאמי",
-      5: "🏠 חדירת מחבלים",     6: "⚠️ אירוע בלתי מוגדר",
-      7: "🌋 רעידת אדמה",       13: '🛸 כטב"מ עוין',
+      1:  "🚀 ירי רקטות וטילים",
+      2:  "✈️ חדירת כלי טיס עוין",
+      3:  "☢️ חומרים מסוכנים",
+      4:  "🌊 צונאמי",
+      5:  "🏠 חדירת מחבלים",
+      6:  "⚠️ אירוע בלתי מוגדר",
+      7:  "🌋 רעידת אדמה",
+      13: "✅ האירוע הסתיים – חזרה לשגרה",
+      14: "⚠️ כוננות – התראות צפויות בקרוב",
     };
 
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -294,7 +299,7 @@
             {hasActive && activeAlerts.data.map((area,i) => (
               <div key={i} style={s.alert} className="card">
                 <div style={{color:"#f85149",fontWeight:"bold",fontSize:15}}>
-                  {CATEGORY_LABELS[activeAlerts.cat] || "⚠️ התראה"}
+                  {CATEGORY_LABELS[activeAlerts.cat] || activeAlerts.title || "⚠️ התראה"}
                 </div>
                 <div style={{fontSize:22,marginTop:6,fontWeight:"bold"}}>{area}</div>
                 <div style={{fontSize:12,color:"#8b949e",marginTop:5}}>{formatTime(activeAlerts.alertDate)}</div>
@@ -314,7 +319,7 @@
                   const ago = Math.round((Date.now() - new Date(item.detectedAt).getTime()) / 60000);
                   return (
                     <div key={i} style={{...s.histRow, borderColor:"#f0883e33"}} className="card">
-                      <div style={{fontWeight:"bold",fontSize:13,color:"#f0883e"}}>{CATEGORY_LABELS[item.category] || "⚠️ התראה"}</div>
+                      <div style={{fontWeight:"bold",fontSize:13,color:"#f0883e"}}>{CATEGORY_LABELS[item.category] || item.title || "⚠️ התראה"}</div>
                       <div style={{color:"#c9d1d9",marginTop:3,fontSize:14}}>{(item.areas||[]).join(", ")}</div>
                       <div style={{fontSize:11,color:"#8b949e",marginTop:4}}>
                         {formatTime(item.detectedAt)} • לפני {ago} דק׳
@@ -331,7 +336,7 @@
                 <div style={{fontSize:12,color:"#8b949e",marginBottom:8,fontWeight:"bold"}}>📡 היסטוריה מאתר פיקוד העורף</div>
                 {history.slice(0,50).map((item,i) => (
                   <div key={i} style={s.histRow} className="card">
-                    <div style={{fontWeight:"bold",fontSize:14}}>{CATEGORY_LABELS[item.category] || `⚠️ קטגוריה ${item.category}`}</div>
+                    <div style={{fontWeight:"bold",fontSize:14}}>{CATEGORY_LABELS[item.category] || item.title || `⚠️ קטגוריה ${item.category}`}</div>
                     <div style={{color:"#c9d1d9",marginTop:4,fontSize:14}}>{item.data}</div>
                     <div style={{fontSize:11,color:"#8b949e",marginTop:5}}>{formatTime(item.alertDate)}</div>
                   </div>
