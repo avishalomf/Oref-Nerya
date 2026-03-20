@@ -29,7 +29,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const VERSION     = "2.1";
+    const VERSION     = "2.2";
     // התראות פעילות — מ-GitHub (כל דקה)
     const GITHUB_BASE  = "https://raw.githubusercontent.com/avishalomf/Oref-Nerya/main";
     const ALERTS_URL   = `${GITHUB_BASE}/alerts.json`;
@@ -340,7 +340,10 @@
             )}
           </>}
 
-          <div style={s.footer}>v{VERSION} • התראות: כל דקה • היסטוריה: זמן אמת</div>
+          <div style={s.footer}>
+          <span style={{color:"#e3b341", fontSize:14, fontWeight:"bold"}}>v{VERSION}</span>
+          <span style={{color:"#484f58", fontSize:11}}> • התראות: כל דקה • היסטוריה: זמן אמת</span>
+        </div>
         </div>
       );
     }
