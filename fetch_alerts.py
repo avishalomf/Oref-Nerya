@@ -35,6 +35,7 @@ def save_log(log):
     log = [e for e in log if datetime.fromisoformat(e["detectedAt"].replace("Z","+00:00")) > cutoff]
     with open(LOG_FILE, "w", encoding="utf-8") as f:
         json.dump(log, f, ensure_ascii=False, indent=2)
+    print(f"alert_log.json ✓ ({len(log)} רשומות)")
 
 # --- התראות פעילות ---
 active_data = None
@@ -71,9 +72,8 @@ try:
 except Exception as e:
     print(f"log error: {e}")
     # צור קובץ ריק אם לא קיים
-    if not os.path.exists(LOG_FILE):
-        with open(LOG_FILE, "w") as f:
-            json.dump([], f)
+    with open(LOG_FILE, "w") as f:
+        json.dump([], f)
 
 # --- היסטוריה ---
 try:
