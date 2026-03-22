@@ -33,7 +33,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const VERSION     = "3.0";
+    const VERSION     = "3.1";
     // התראות פעילות — מ-GitHub (כל דקה)
     const GITHUB_BASE  = "https://raw.githubusercontent.com/avishalomf/Oref-Nerya/main";
     const ALERTS_URL   = `${GITHUB_BASE}/alerts.json`;
@@ -90,18 +90,25 @@
           o.start(); o.stop(c.currentTime+1.5);
         },
         allclear: (c) => {
-          // דו-מי-סול — מנגינת שגרה
-          [261.63, 329.63, 392.00].forEach((freq, i) => {
-            const o = c.createOscillator(), g = c.createGain();
-            o.connect(g); g.connect(c.destination);
-            o.type = "sine"; o.frequency.value = freq;
-            const t = c.currentTime + i * 0.28;
-            g.gain.setValueAtTime(0.0, t);
-            g.gain.linearRampToValueAtTime(0.45, t + 0.05);
-            g.gain.setValueAtTime(0.45, t + 0.18);
-            g.gain.exponentialRampToValueAtTime(0.001, t + 0.55);
-            o.start(t); o.stop(t + 0.55);
-          });
+          // דו-מי-סול — מנגינת שגרה, מושמעת 5 פעמים
+          const playChord = (startTime) => {
+            [261.63, 329.63, 392.00].forEach((freq, i) => {
+              const o = c.createOscillator(), g = c.createGain();
+              o.connect(g); g.connect(c.destination);
+              o.type = "sine"; o.frequency.value = freq;
+              const t = startTime + i * 1.4;
+              g.gain.setValueAtTime(0.0, t);
+              g.gain.linearRampToValueAtTime(0.45, t + 0.1);
+              g.gain.setValueAtTime(0.45, t + 0.9);
+              g.gain.exponentialRampToValueAtTime(0.001, t + 1.3);
+              o.start(t); o.stop(t + 1.4);
+            });
+          };
+          playChord(c.currentTime);
+          playChord(c.currentTime + 4.5);
+          playChord(c.currentTime + 9.0);
+          playChord(c.currentTime + 13.5);
+          playChord(c.currentTime + 18.0);
         },
       };
       if (sounds[type]) sounds[type](ctx);
